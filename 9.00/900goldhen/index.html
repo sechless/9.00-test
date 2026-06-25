@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PS4 9.00 FW GoldHEN Host by GamerHack</title>
+    <style>
+        body {
+            background: radial-gradient(circle, #0f0f1a, #000000);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', sans-serif;
+            text-align: center;
+            padding-top: 30px;
+        }
+
+        h1 {
+            text-shadow: 0 0 15px #00d4ff;
+            color: #fff;
+        }
+
+        /* Extremely Attractive Terminal */
+        #terminal {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid #00d4ff;
+            color: #00ff9f;
+            font-family: 'Courier New', Courier, monospace;
+            width: 75%;
+            margin: 30px auto;
+            border-radius: 15px;
+            padding: 20px;
+            height: 220px;
+            overflow-y: auto;
+            text-align: left;
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #terminal::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #terminal::-webkit-scrollbar-thumb {
+            background: #00d4ff;
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            border-left: 3px solid #00ff9f;
+            padding-left: 10px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #msgs {
+            font-size: 24px;
+            color: #00d4ff;
+            margin: 20px 0;
+        }
+
+        .thanks {
+            margin-top: 30px;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .thanks a {
+            color: #ff4757;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+    </style>
+    <script src="int64.js"></script>
+    <script src="rop.js"></script>
+    <script src="kexploit.js"></script>
+    <script src="webkit.js"></script>
+</head>
+
+<body onload="setTimeout(poc, 50);">
+
+    <script>
+        function log(message) {
+            var terminal = document.getElementById("terminal");
+            var entry = document.createElement("div");
+            entry.className = "log-entry";
+            entry.textContent = "> " + message;
+            terminal.appendChild(entry);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        if (window.applicationCache.status == '0') { window.location.replace("cache.html"); }
+    </script>
+
+    <h1>PS4 9.00 FW GoldHEN Host</h1>
+
+    <div id="terminal">
+        <div class="log-entry">SYSTEM_READY</div>
+        <div class="log-entry">ESTABLISHING_CONNECTION...</div>
+    </div>
+
+    <h1 id="msgs">Loading GoldHEN v2.4b18.10...</h1>
+
+    <div class="thanks">
+        Special Thanks: <a href="https://twitter.com/sleirsgoevy">@sleirsgoevy</a> | ChendoChap | <a
+            href="https://twitter.com/Znullptr">@Znullptr</a> | SiSTR0
+    </div>
+
+    <script>
+        var LoadedMSG = "GoldHEN Loaded Successfully!";
+        var PLfile = "goldhen_2.4b18.10.bin";
+
+        function allset() {
+            log("FINALIZING_PAYLOAD_EXECUTION");
+            document.getElementById("msgs").innerHTML = LoadedMSG;
+        }
+
+        function load_poc() {
+            log("FETCHING_BINARY_DATA...");
+            var req = new XMLHttpRequest();
+            req.responseType = "arraybuffer";
+            req.open('GET', PLfile);
+            req.send();
+            req.onreadystatechange = function () {
+                if (req.readyState == 4) {
+                    log("PAYLOAD_RECEIVED_INJECTING");
+                    PLD = req.response;
+                    var payload_buffer = chain.syscall(477, 0, PLD.byteLength * 4, 7, 0x1002, -1, 0);
+                    var pl = p.array_from_address(payload_buffer, PLD.byteLength * 4);
+                    var padding = new Uint8Array(4 - (req.response.byteLength % 4) % 4);
+                    var tmp = new Uint8Array(req.response.byteLength + padding.byteLength);
+                    tmp.set(new Uint8Array(req.response), 0);
+                    tmp.set(padding, req.response.byteLength);
+                    var shellcode = new Uint32Array(tmp.buffer);
+                    pl.set(shellcode, 0);
+                    var pthread = p.malloc(0x10);
+                    chain.call(libKernelBase.add32(OFFSET_lk_pthread_create), pthread, 0x0, payload_buffer, 0);
+                    allset();
+                }
+            };
+        }
+
+        function jbdone() {
+            log("EXPLOIT_TRIGGERED_SUCCESS");
+            setTimeout(load_poc, 500);
+        }
+    </script>
+</body>
+
+</html>
